@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نظام إدارة الجدول المدرسي الذكي</title>
+    
+    <!-- PWA / Desktop App Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a237e">
+    <meta name="application-name" content="نظام الجداول">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Tajawal', sans-serif;
+        background-color: #f8fafc;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Default for app-like feel */
+      }
+      
+      .vertical-text {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        white-space: nowrap;
+        text-align: center;
+      }
+
+      /* تنسيق أشرطة التمرير لتكون ظاهرة وجميلة */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9; 
+        border-radius: 4px;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1; 
+        border-radius: 6px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; 
+      }
+
+      .custom-scrollbar::-webkit-scrollbar {
+        height: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #818cf8;
+      }
+
+      /* -------------------------------------------------- */
+      /* إعدادات الطباعة المتقدمة لإصلاح مشاكل الرواتب */
+      /* -------------------------------------------------- */
+      @media print {
+        @page {
+          size: landscape;
+          margin: 5mm;
+        }
+
+        /* إخفاء العناصر غير الضرورية */
+        .no-print, nav, aside, .fixed, button, .shadow-xl, .shadow-2xl, .shadow-lg {
+          display: none !important;
+        }
+
+        /* إعادة ضبط الحاويات للسماح بالتمدد */
+        body, html, #root, .main-layout, .print-container, main, .print-content {
+          height: auto !important;
+          width: 100% !important;
+          overflow: visible !important;
+          position: static !important;
+          display: block !important;
+          background-color: white !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        /* تحسين مظهر الجداول */
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          break-inside: auto;
+        }
+        
+        tr {
+          break-inside: avoid;
+          break-after: auto;
+        }
+        
+        th, td {
+          border: 1px solid #000 !important;
+          padding: 4px !important;
+          font-size: 10pt !important;
+          color: black !important;
+        }
+
+        /* إزالة الخلفيات الملونة والظلال لتوفير الحبر */
+        .bg-white, .bg-slate-50, .bg-indigo-50, .bg-emerald-50, .bg-red-50, .bg-blue-50 {
+          background-color: transparent !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+
+        /* إظهار العناصر المهمة فقط */
+        .print:block {
+          display: block !important;
+        }
+        
+        .print:table-cell {
+          display: table-cell !important;
+        }
+
+        /* تكبير النصوص قليلاً للوضوح */
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+
+      @keyframes slideUp {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+      
+      @keyframes fade-in {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+    </style>
+    <script>
+      let registration;
+      
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          const isRestricted = window.location.origin.includes('usercontent.goog') || window.location.origin.includes('ai.studio');
+          
+          if (isRestricted) {
+             console.log('Restricted origin detected. SW registration skipped to avoid error.');
+             return;
+          }
+
+          navigator.serviceWorker.register('sw.js', { scope: './' })
+            .then(reg => {
+              registration = reg;
+              console.log('SW Registered');
+              
+              reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    window.dispatchEvent(new CustomEvent('app-update-available'));
+                  }
+                });
+              });
+            })
+            .catch(err => {
+              console.warn('ServiceWorker registration failed:', err.message);
+            });
+        });
+
+        window.activateUpdate = () => {
+          if (registration && registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            window.location.reload();
+          } else {
+            window.location.reload();
+          }
+        };
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.36.0",
+    "vite": "https://esm.sh/vite@^7.3.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-gray-50 text-right" dir="rtl">
+    <div id="root" class="h-screen w-screen"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
